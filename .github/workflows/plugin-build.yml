@@ -7,6 +7,12 @@ on:
       - 'official/**'
       - 'community/**'
   workflow_dispatch:
+    inputs:
+      all:
+        description: 'Build all plugins (not just changed)'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   # ── Step 1: Detect which plugins changed ──────────────────────────
@@ -28,7 +34,11 @@ jobs:
       - name: Find changed plugin folders
         id: changed
         run: |
-          PLUGINS=$(node registry/scripts/detect-changed-plugins.js HEAD~1 HEAD)
+          if [ "${{ github.event.inputs.all }}" = "true" ]; then
+            PLUGINS=$(node registry/scripts/detect-changed-plugins.js --all)
+          else
+            PLUGINS=$(node registry/scripts/detect-changed-plugins.js HEAD~1 HEAD)
+          fi
           echo "Changed plugins: $PLUGINS"
           echo "plugins=$PLUGINS" >> $GITHUB_OUTPUT
 

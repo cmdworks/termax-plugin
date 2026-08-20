@@ -2,6 +2,27 @@
 
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
+import path from 'node:path';
+
+function getAllPlugins() {
+  const scopes = ['official', 'community'];
+  const list = [];
+  for (const scope of scopes) {
+    if (fs.existsSync(scope)) {
+      const entries = fs.readdirSync(scope, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory() && fs.existsSync(path.join(scope, entry.name, 'termax-plugin.json'))) {
+          list.push({
+            scope,
+            id: entry.name,
+            path: `${scope}/${entry.name}`,
+          });
+        }
+      }
+    }
+  }
+  return list;
+}
 
 function getChangedFiles(baseCommit = 'HEAD~1', headCommit = 'HEAD') {
   try {
@@ -20,7 +41,6 @@ function parseChangedPluginDirs(fileList) {
 
   for (const filePath of fileList) {
     const normalized = filePath.replace(/\\/g, '/').trim();
-    // Matches (plugins/)?(official|community)/<plugin-id>/...
     const match = normalized.match(/^(?:plugins\/)?(official|community)\/([a-zA-Z0-9_-]+)/);
     if (match) {
       const scope = match[1];
@@ -44,6 +64,11 @@ function parseChangedPluginDirs(fileList) {
 }
 
 async function main() {
+  if (process.argv.includes('--all')) {
+    console.log(JSON.stringify(getAllPlugins()));
+    return;
+  }
+
   let fileList = [];
 
   if (!process.stdin.isTTY) {
@@ -61,7 +86,13 @@ async function main() {
     fileList = getChangedFiles(base, head);
   }
 
-  const plugins = parseChangedPluginDirs(fileList);
+  let plugins = parseChangedPluginDirs(fileList);
+  
+  // If no git diff detected (e.g. initial run), fall back to all plugins
+  if (plugins.length === 0 && process.env.GITHUB_EVENT_NAME === 'workflow_dispatch') {
+    plugins = getAllPlugins();
+  }
+
   console.log(JSON.stringify(plugins));
 }
 
