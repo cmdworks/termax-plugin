@@ -24,8 +24,9 @@ bucket_name = "termax-plugins"
 
 # ── Production environment ───────────────────────────────────────────────────
 [env.production]
+workers_dev = true
 routes = [
-  { pattern = "api.plugins.termax.pp.ua/*", zone_name = "termax.pp.ua" }
+  { pattern = "api.plugins.termax.pp.ua", custom_domain = true }
 ]
 
 [env.production.vars]
@@ -45,7 +46,3 @@ id      = "157db9f553514a20bdcaca17d1e421d1"
 [[env.production.r2_buckets]]
 binding     = "R2"
 bucket_name = "termax-plugins"
-
-# [[env.production.vectorize]]
-# binding    = "VECTORIZE"
-# index_name = "termax-plugin-embeddings"
