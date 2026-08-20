@@ -55,7 +55,6 @@ app.get('/plugin/:id/readme', async (c) => {
   const id = c.req.param('id');
   const kvKey = `readme:${id}`;
 
-  // Check KV cache
   try {
     const cached = await c.env.KV.get(kvKey);
     if (cached) {
@@ -67,7 +66,6 @@ app.get('/plugin/:id/readme', async (c) => {
     console.error('KV get error:', err);
   }
 
-  // Look up plugin to find scope & path in R2
   const row = await c.env.DB.prepare('SELECT scope FROM plugins WHERE id = ?').bind(id).first<{ scope: string }>();
   const scope = row?.scope || 'community';
   const r2Key = `${scope}/${id}/latest/README.md`;
@@ -76,7 +74,6 @@ app.get('/plugin/:id/readme', async (c) => {
     const obj = await c.env.R2.get(r2Key);
     if (obj) {
       const text = await obj.text();
-      // Cache in KV for 1 hour
       await c.env.KV.put(kvKey, text, { expirationTtl: 3600 });
       return new Response(text, {
         headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
@@ -111,7 +108,6 @@ app.post('/plugin/:id/install', async (c) => {
   if (!alreadyCounted) {
     const todayMidnight = dayKey * 86400;
 
-    // Increment downloads in plugins table & record event
     await c.env.DB.batch([
       c.env.DB.prepare('UPDATE plugins SET downloads = downloads + 1 WHERE id = ?').bind(id),
       c.env.DB.prepare('INSERT INTO installs (plugin_id, installed_at, region) VALUES (?, ?, ?)').bind(
@@ -133,27 +129,32 @@ app.post('/plugin/:id/install', async (c) => {
 
 // ── Admin Webhook (GitHub Actions publish event) ─────────────────────────────
 app.post('/admin/publish', async (c) => {
-  const rawBody = await c.req.text();
-  const signature = c.req.header('X-Termax-Signature');
-
-  const isValid = await verifySignature(rawBody, signature, c.env.ADMIN_SECRET);
-  if (!isValid) {
-    return c.json({ error: 'Unauthorized signature' }, 401);
-  }
-
-  let payload: PublishPayload;
   try {
-    payload = JSON.parse(rawBody);
-  } catch {
-    return c.json({ error: 'Invalid JSON payload' }, 400);
-  }
+    const rawBody = await c.req.text();
+    const signature = c.req.header('X-Termax-Signature');
 
-  if (!payload.plugin || !payload.plugin.id) {
-    return c.json({ error: 'Missing plugin payload' }, 400);
-  }
+    const isValid = await verifySignature(rawBody, signature, c.env.ADMIN_SECRET);
+    if (!isValid) {
+      return c.json({ error: 'Unauthorized signature' }, 401);
+    }
 
-  const result = await upsertPlugin(payload.plugin, c.env);
-  return c.json(result);
+    let payload: PublishPayload;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch (parseErr: any) {
+      return c.json({ error: `Invalid JSON payload: ${parseErr.message}` }, 400);
+    }
+
+    if (!payload.plugin || !payload.plugin.id) {
+      return c.json({ error: 'Missing plugin payload or plugin.id' }, 400);
+    }
+
+    const result = await upsertPlugin(payload.plugin, c.env);
+    return c.json(result);
+  } catch (err: any) {
+    console.error('Admin publish uncaught error:', err);
+    return c.json({ error: err?.message || String(err), stack: err?.stack }, 500);
+  }
 });
 
 // ── Full Index JSON (for offline load / full registry sync) ──────────────────
