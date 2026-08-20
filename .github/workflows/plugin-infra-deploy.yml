@@ -19,7 +19,7 @@ jobs:
 
       - name: Install Worker dependencies
         working-directory: registry/worker
-        run: npm ci
+        run: npm install
 
       - name: Run D1 migrations (remote)
         working-directory: registry/worker
