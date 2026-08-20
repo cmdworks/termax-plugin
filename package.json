@@ -1,0 +1,11 @@
+{
+  "name": "termax-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Termax official and community plugin repository & registry infrastructure",
+  "scripts": {
+    "validate": "node registry/scripts/validate-manifest.js",
+    "generate-registry": "node registry/scripts/generate-registry.js"
+  }
+}

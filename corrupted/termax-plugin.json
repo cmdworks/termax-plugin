@@ -1,0 +1,7 @@
+{
+  "id": "corrupted-plugin",
+  "name": "Corrupted Plugin",
+  "version": "1.0.0",
+  "description": "This plugin is corrupted to test error handling.",
+  "main": "corrupted.wasm"
+}

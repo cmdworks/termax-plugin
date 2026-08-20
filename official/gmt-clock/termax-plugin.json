@@ -1,0 +1,28 @@
+{
+  "id": "gmt-clock",
+  "name": "GMT Clock",
+  "version": "1.1.0",
+  "author": "Termax",
+  "description": "Displays the current GMT time in the status bar. Updates every second via the Termax scheduler.",
+  "scope": "official",
+  "license": "MIT",
+  "minTermaxVersion": "0.7.0",
+  "tags": ["time", "clock", "status-bar"],
+  "main": "gmt_clock.wasm",
+  "permissions": [],
+  "contributes": {
+    "commands": [
+      {
+        "id": "update_time",
+        "title": "Update Time",
+        "interval": 1000
+      }
+    ],
+    "statusBarItems": [
+      {
+        "id": "gmt-time",
+        "position": "right"
+      }
+    ]
+  }
+}

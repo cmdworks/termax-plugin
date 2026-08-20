@@ -1,0 +1,20 @@
+{
+  "name": "termax-plugin-registry",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker — Termax plugin registry API",
+  "scripts": {
+    "dev":    "wrangler dev",
+    "deploy": "wrangler deploy --env production",
+    "types":  "wrangler types",
+    "lint":   "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241022.0",
+    "typescript":               "^5.6.0",
+    "wrangler":                 "^3.80.0"
+  }
+}

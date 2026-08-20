@@ -1,0 +1,157 @@
+name: Plugin Registry — Build & Publish Changed Plugins
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'official/**'
+      - 'community/**'
+  workflow_dispatch:
+
+jobs:
+  # ── Step 1: Detect which plugins changed ──────────────────────────
+  detect:
+    name: Detect changed plugins
+    runs-on: ubuntu-latest
+    outputs:
+      plugins: ${{ steps.changed.outputs.plugins }}
+      has_changes: ${{ steps.changed.outputs.has_changes }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Find changed plugin folders
+        id: changed
+        run: |
+          PLUGINS=$(node registry/scripts/detect-changed-plugins.js HEAD~1 HEAD)
+          echo "Changed plugins: $PLUGINS"
+          echo "plugins=$PLUGINS" >> $GITHUB_OUTPUT
+
+          COUNT=$(echo "$PLUGINS" | jq 'length')
+          if [ "$COUNT" -gt 0 ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ── Step 2: Validate manifests ────────────────────────────────────
+  validate:
+    name: Validate ${{ matrix.plugin.id }}
+    needs: detect
+    if: needs.detect.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        plugin: ${{ fromJson(needs.detect.outputs.plugins) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Validate termax-plugin.json
+        run: |
+          node registry/scripts/validate-manifest.js \
+            "${{ matrix.plugin.path }}/termax-plugin.json"
+
+  # ── Step 3: Build & Publish only changed plugins in parallel ──────
+  build-and-publish:
+    name: Build & Publish ${{ matrix.plugin.scope }}/${{ matrix.plugin.id }}
+    needs: [detect, validate]
+    if: needs.detect.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: ${{ fromJson(needs.detect.outputs.plugins) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install Rust + WASM target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ matrix.plugin.path }} -> target
+          key: plugin-${{ matrix.plugin.scope }}-${{ matrix.plugin.id }}
+
+      - name: Build WASM
+        working-directory: ${{ matrix.plugin.path }}
+        run: cargo build --target wasm32-wasip1 --release
+
+      - name: Package plugin
+        id: package
+        working-directory: ${{ matrix.plugin.path }}
+        run: |
+          PLUGIN_ID=$(jq -r '.id' termax-plugin.json)
+          VERSION=$(jq -r '.version' termax-plugin.json)
+          SCOPE="${{ matrix.plugin.scope }}"
+          PACKAGE_NAME=$(grep '^name' Cargo.toml | head -1 | cut -d'"' -f2)
+          if [ -z "$PACKAGE_NAME" ]; then
+            PACKAGE_NAME=$PLUGIN_ID
+          fi
+          WASM_NAME=$(echo "$PACKAGE_NAME" | tr '-' '_')
+
+          jq --arg s "$SCOPE" --arg w "${WASM_NAME}.wasm" \
+            '. + {scope: $s, main: $w}' termax-plugin.json > dist_manifest.json
+
+          mkdir -p dist
+          cp "target/wasm32-wasip1/release/${WASM_NAME}.wasm" dist/
+          cp dist_manifest.json dist/termax-plugin.json
+          [ -f README.md ] && cp README.md dist/
+          [ -f icon.png ]  && cp icon.png  dist/
+
+          tar -czf "dist/${PLUGIN_ID}.tar.gz" -C dist \
+            "${WASM_NAME}.wasm" termax-plugin.json \
+            $([ -f dist/README.md ] && echo README.md) \
+            $([ -f dist/icon.png  ] && echo icon.png)
+
+          echo "plugin_id=$PLUGIN_ID" >> $GITHUB_OUTPUT
+          echo "version=$VERSION"     >> $GITHUB_OUTPUT
+          echo "scope=$SCOPE"         >> $GITHUB_OUTPUT
+
+      - name: Upload to R2
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_BUCKET: termax-plugins
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          SCOPE:     ${{ steps.package.outputs.scope }}
+          PLUGIN_ID: ${{ steps.package.outputs.plugin_id }}
+          VERSION:   ${{ steps.package.outputs.version }}
+        working-directory: ${{ matrix.plugin.path }}/dist
+        run: |
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          R2_PREFIX="${SCOPE}/${PLUGIN_ID}"
+
+          for f in *; do
+            aws s3 cp "$f" "s3://${R2_BUCKET}/${R2_PREFIX}/latest/$f" \
+              --endpoint-url "$ENDPOINT"
+            aws s3 cp "$f" "s3://${R2_BUCKET}/${R2_PREFIX}/${VERSION}/$f" \
+              --endpoint-url "$ENDPOINT"
+          done
+          echo "Uploaded ${SCOPE}/${PLUGIN_ID} v${VERSION} to R2"
+
+      - name: Notify Worker (update D1 + invalidate KV)
+        env:
+          WORKER_ADMIN_SECRET: ${{ secrets.WORKER_ADMIN_SECRET }}
+          SCOPE:     ${{ steps.package.outputs.scope }}
+          PLUGIN_ID: ${{ steps.package.outputs.plugin_id }}
+        working-directory: ${{ matrix.plugin.path }}
+        run: |
+          node ../../registry/scripts/push-to-worker.js \
+            dist/termax-plugin.json \
+            "https://api.plugins.termax.pp.ua/admin/publish"

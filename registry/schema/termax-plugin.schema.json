@@ -1,0 +1,180 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://plugins.termax.pp.ua/termax-plugin.schema.json",
+  "title": "Termax Plugin Manifest",
+  "description": "Schema for termax-plugin.json plugin manifests",
+  "type": "object",
+  "required": ["id", "name", "version", "author", "description", "main"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique plugin identifier in kebab-case. Immutable after first publish.",
+      "pattern": "^[a-z][a-z0-9-]{0,30}[a-z0-9]$",
+      "minLength": 2,
+      "maxLength": 32
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable plugin name.",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version (semver).",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?$"
+    },
+    "author": {
+      "type": "string",
+      "description": "Author name or GitHub username.",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "description": {
+      "type": "string",
+      "description": "Short plugin description shown in the marketplace.",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "main": {
+      "type": "string",
+      "description": "Path to the compiled WASM file (relative to manifest).",
+      "pattern": "\\.wasm$"
+    },
+    "license": {
+      "type": "string",
+      "description": "SPDX license identifier.",
+      "default": "MIT",
+      "examples": ["MIT", "Apache-2.0", "GPL-3.0"]
+    },
+    "repository": {
+      "type": "string",
+      "description": "URL to the plugin source repository.",
+      "format": "uri"
+    },
+    "homepage": {
+      "type": "string",
+      "description": "URL to the plugin homepage or documentation.",
+      "format": "uri"
+    },
+    "tags": {
+      "type": "array",
+      "description": "Search tags for the plugin marketplace.",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$",
+        "maxLength": 24
+      },
+      "maxItems": 8,
+      "uniqueItems": true
+    },
+    "icon": {
+      "type": "string",
+      "description": "Relative path to the plugin icon (PNG/SVG, 256×256 recommended).",
+      "examples": ["icon.png", "icon.svg"]
+    },
+    "screenshots": {
+      "type": "array",
+      "description": "Relative paths to screenshot images shown in the detail drawer.",
+      "items": { "type": "string" },
+      "maxItems": 5
+    },
+    "minTermaxVersion": {
+      "type": "string",
+      "description": "Minimum Termax version required to run this plugin.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["0.7.0"]
+    },
+    "permissions": {
+      "type": "array",
+      "description": "Host capabilities the plugin requires.",
+      "items": {
+        "type": "string",
+        "enum": ["network", "fs", "exec", "terminal.read", "terminal.write", "ipc"]
+      },
+      "uniqueItems": true
+    },
+    "contributes": {
+      "type": "object",
+      "description": "Extension points this plugin contributes to the Termax UI.",
+      "additionalProperties": false,
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "title"],
+            "properties": {
+              "id":       { "type": "string" },
+              "title":    { "type": "string" },
+              "interval": { "type": "integer", "minimum": 100, "description": "Periodic execution interval in ms." },
+              "group":    { "type": "string" },
+              "icon":     { "type": "string" }
+            }
+          }
+        },
+        "statusBarItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id":       { "type": "string" },
+              "position": { "type": "string", "enum": ["left", "right"] },
+              "priority": { "type": "integer" }
+            }
+          }
+        },
+        "contextMenuItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "title"],
+            "properties": {
+              "id":    { "type": "string" },
+              "title": { "type": "string" },
+              "when":  { "type": "string", "enum": ["always", "hasSelection"] }
+            }
+          }
+        },
+        "snippets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["prefix", "body"],
+            "properties": {
+              "prefix":      { "type": "string" },
+              "body":        { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "triggers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["pattern", "command"],
+            "properties": {
+              "pattern": { "type": "string", "description": "Regex pattern to match against terminal output." },
+              "command": { "type": "string" }
+            }
+          }
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["type", "title", "default"],
+            "properties": {
+              "type":        { "type": "string", "enum": ["string", "number", "boolean"] },
+              "title":       { "type": "string" },
+              "default":     {},
+              "description": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

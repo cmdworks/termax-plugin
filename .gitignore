@@ -1,0 +1,20 @@
+# Rust build artifacts
+target/
+**/target/
+**/*.rs.bk
+
+# Node & dependencies
+node_modules/
+**/node_modules/
+.wrangler/
+**/dist/
+**/release/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets & env
+.env
+.env.*
+!.env.example

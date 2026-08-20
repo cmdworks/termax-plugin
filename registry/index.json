@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "generated": 1787201955,
+  "plugins": [
+    {
+      "id": "gmt-clock",
+      "name": "GMT Clock",
+      "version": "1.1.0",
+      "author": "Termax",
+      "description": "Displays the current GMT time in the status bar. Updates every second via the Termax scheduler.",
+      "scope": "official",
+      "license": "MIT",
+      "minTermaxVersion": "0.7.0",
+      "iconUrl": null,
+      "pageUrl": "https://termax.pp.ua/plugins/gmt-clock",
+      "readmeUrl": "https://plugins.termax.pp.ua/official/gmt-clock/latest/README.md",
+      "downloadUrl": "https://plugins.termax.pp.ua/official/gmt-clock/latest/gmt-clock.tar.gz",
+      "downloads": 0,
+      "publishedAt": 1787201955,
+      "updatedAt": 1787201955,
+      "tags": [
+        "time",
+        "clock",
+        "status-bar"
+      ]
+    },
+    {
+      "id": "sys-monitor",
+      "name": "System Monitor",
+      "version": "1.0.0",
+      "author": "Termax",
+      "description": "Displays live CPU and Memory usage in the status bar.",
+      "scope": "official",
+      "license": "MIT",
+      "minTermaxVersion": "0.7.0",
+      "iconUrl": null,
+      "pageUrl": "https://termax.pp.ua/plugins/sys-monitor",
+      "readmeUrl": "https://plugins.termax.pp.ua/official/sys-monitor/latest/README.md",
+      "downloadUrl": "https://plugins.termax.pp.ua/official/sys-monitor/latest/sys-monitor.tar.gz",
+      "downloads": 0,
+      "publishedAt": 1787201955,
+      "updatedAt": 1787201955,
+      "tags": [
+        "system",
+        "status-bar",
+        "cpu",
+        "memory"
+      ]
+    }
+  ]
+}

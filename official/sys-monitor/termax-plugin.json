@@ -1,0 +1,44 @@
+{
+  "id": "sys-monitor",
+  "name": "System Monitor",
+  "version": "1.0.0",
+  "description": "Displays live CPU and Memory usage in the status bar.",
+  "author": "Termax",
+  "scope": "official",
+  "license": "MIT",
+  "minTermaxVersion": "0.7.0",
+  "tags": ["system", "status-bar", "cpu", "memory"],
+  "main": "sys_monitor.wasm",
+  "permissions": ["exec"],
+  "contributes": {
+    "commands": [
+      {
+        "id": "update_stats",
+        "title": "Update System Stats",
+        "interval": 2000
+      }
+    ],
+    "statusBarItems": [
+      {
+        "id": "sys-cpu",
+        "position": "left"
+      },
+      {
+        "id": "sys-memory",
+        "position": "left"
+      }
+    ],
+    "settings": {
+      "show_cpu": {
+        "type": "boolean",
+        "title": "Show CPU Usage",
+        "default": true
+      },
+      "show_memory": {
+        "type": "boolean",
+        "title": "Show Memory Usage",
+        "default": true
+      }
+    }
+  }
+}

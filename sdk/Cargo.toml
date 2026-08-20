@@ -1,0 +1,17 @@
+[package]
+name = "termax-plugin-sdk"
+version = "0.1.0"
+edition = "2021"
+description = "Termax plugin SDK — WIT bindings and host API helpers"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wit-bindgen = "0.36"
+
+[profile.release]
+opt-level = "s"
+strip = "symbols"
+lto = true
