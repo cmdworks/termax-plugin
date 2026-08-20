@@ -26,7 +26,7 @@ export async function verifySignature(
   return crypto.subtle.verify('HMAC', key, sigBytes, enc.encode(rawBody));
 }
 
-// Upsert plugin into D1 and sync tags
+// Upsert plugin into D1 and sync tags & FTS
 export async function upsertPlugin(
   payload: PublishPayload['plugin'],
   env: Env
@@ -48,7 +48,7 @@ export async function upsertPlugin(
     tags = [],
   } = payload;
 
-  // Insert or Update plugin record
+  // 1. Insert or Update plugin record
   await env.DB.prepare(`
     INSERT INTO plugins (
       id, name, version, author, description, scope, license,
@@ -86,7 +86,7 @@ export async function upsertPlugin(
     now
   ).run();
 
-  // Clear existing tags and re-insert
+  // 2. Clear existing tags and re-insert
   await env.DB.prepare('DELETE FROM tags WHERE plugin_id = ?').bind(id).run();
 
   if (tags.length > 0) {
@@ -99,7 +99,18 @@ export async function upsertPlugin(
     await env.DB.batch(stmts);
   }
 
-  // Invalidate cache
+  // 3. Sync FTS table
+  try {
+    await env.DB.prepare('DELETE FROM plugins_fts WHERE plugin_id = ?').bind(id).run();
+    await env.DB.prepare(`
+      INSERT INTO plugins_fts (plugin_id, name, author, description, tags_blob)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(id, name, author, description, tags.join(' ')).run();
+  } catch (ftsErr) {
+    console.error('FTS update error (non-fatal):', ftsErr);
+  }
+
+  // 4. Invalidate cache
   try {
     await env.KV.delete('registry:index');
     await env.KV.delete(`readme:${id}`);

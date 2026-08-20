@@ -107,39 +107,42 @@ export async function searchPlugins(
       .filter(Boolean);
 
     if (ftsTokens.length > 0) {
-      // Prefix matching on tokens for instant search as you type
       const ftsQuery = ftsTokens.map((t) => `${t}*`).join(' ');
 
-      let sql = `
-        SELECT
-          p.*,
-          GROUP_CONCAT(t.tag, ',') AS tags,
-          -bm25(plugins_fts, 0, 10, 3, 5, 8) AS score
-        FROM plugins_fts
-        JOIN plugins p ON plugins_fts.rowid = p.rowid
-        LEFT JOIN tags t ON p.id = t.plugin_id
-        WHERE plugins_fts MATCH ? AND p.status = 'active'
-      `;
-      const params: (string | number)[] = [ftsQuery];
+      try {
+        let sql = `
+          SELECT
+            p.*,
+            GROUP_CONCAT(t.tag, ',') AS tags,
+            -bm25(plugins_fts, 0, 10, 3, 5, 8) AS score
+          FROM plugins_fts
+          JOIN plugins p ON plugins_fts.plugin_id = p.id
+          LEFT JOIN tags t ON p.id = t.plugin_id
+          WHERE plugins_fts MATCH ? AND p.status = 'active'
+        `;
+        const params: (string | number)[] = [ftsQuery];
 
-      if (parsed.scope) {
-        sql += ' AND p.scope = ?';
-        params.push(parsed.scope);
-      }
-      if (parsed.author) {
-        sql += ' AND LOWER(p.author) = ?';
-        params.push(parsed.author);
-      }
+        if (parsed.scope) {
+          sql += ' AND p.scope = ?';
+          params.push(parsed.scope);
+        }
+        if (parsed.author) {
+          sql += ' AND LOWER(p.author) = ?';
+          params.push(parsed.author);
+        }
 
-      sql += ' GROUP BY p.id ORDER BY score DESC, p.downloads DESC LIMIT 30';
+        sql += ' GROUP BY p.id ORDER BY score DESC, p.downloads DESC LIMIT 30';
 
-      const result = await env.DB.prepare(sql).bind(...params).all<PluginRow>();
-      entries = (result.results || []).map(rowToEntry);
+        const result = await env.DB.prepare(sql).bind(...params).all<PluginRow>();
+        entries = (result.results || []).map(rowToEntry);
 
-      if (parsed.tags.length > 0) {
-        entries = entries.filter((entry) =>
-          parsed.tags.every((t) => entry.tags.includes(t))
-        );
+        if (parsed.tags.length > 0) {
+          entries = entries.filter((entry) =>
+            parsed.tags.every((t) => entry.tags.includes(t))
+          );
+        }
+      } catch (ftsErr) {
+        console.error('FTS query error:', ftsErr);
       }
     }
 
