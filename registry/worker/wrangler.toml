@@ -23,11 +23,11 @@ ENVIRONMENT       = "production"
 [[env.production.d1_databases]]
 binding       = "DB"
 database_name = "termax-plugins-db"
-database_id   = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id   = "7febecb9-a899-4ef5-bd53-5385f516f223"
 
 [[env.production.kv_namespaces]]
 binding = "KV"
-id      = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+id      = "157db9f553514a20bdcaca17d1e421d1"
 
 [[env.production.r2_buckets]]
 binding     = "R2"
