@@ -43,7 +43,7 @@ export async function searchPlugins(
   // 1. Check KV cache
   try {
     const cached = await env.KV.get(cacheKey, 'json');
-    if (cached) {
+    if (cached && Array.isArray(cached) && cached.length > 0) {
       return cached as PluginEntry[];
     }
   } catch (err) {
@@ -136,11 +136,13 @@ export async function searchPlugins(
     }
   }
 
-  // Cache in KV for 5 minutes
-  try {
-    await env.KV.put(cacheKey, JSON.stringify(entries), { expirationTtl: 300 });
-  } catch (err) {
-    console.error('KV cache write error:', err);
+  // Only cache positive results in KV for 5 minutes
+  if (entries.length > 0) {
+    try {
+      await env.KV.put(cacheKey, JSON.stringify(entries), { expirationTtl: 300 });
+    } catch (err) {
+      console.error('KV cache write error:', err);
+    }
   }
 
   return entries;
