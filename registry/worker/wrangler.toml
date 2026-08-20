@@ -46,6 +46,6 @@ id      = "157db9f553514a20bdcaca17d1e421d1"
 binding     = "R2"
 bucket_name = "termax-plugins"
 
-[[env.production.vectorize]]
-binding    = "VECTORIZE"
-index_name = "termax-plugin-embeddings"
+# [[env.production.vectorize]]
+# binding    = "VECTORIZE"
+# index_name = "termax-plugin-embeddings"
