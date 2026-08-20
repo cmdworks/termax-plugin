@@ -7,6 +7,21 @@ compatibility_flags = ["nodejs_compat"]
 [dev]
 port = 8787
 
+# ── Top-level bindings (used by default and in CI) ───────────────────────────
+[[d1_databases]]
+binding       = "DB"
+database_name = "termax-plugins-db"
+database_id   = "7febecb9-a899-4ef5-bd53-5385f516f223"
+migrations_dir = "../migrations"
+
+[[kv_namespaces]]
+binding = "KV"
+id      = "157db9f553514a20bdcaca17d1e421d1"
+
+[[r2_buckets]]
+binding     = "R2"
+bucket_name = "termax-plugins"
+
 # ── Production environment ───────────────────────────────────────────────────
 [env.production]
 routes = [
@@ -16,9 +31,6 @@ routes = [
 [env.production.vars]
 REGISTRY_BASE_URL = "https://plugins.termax.pp.ua"
 ENVIRONMENT       = "production"
-
-# Secrets (set via: wrangler secret put <NAME> --env production)
-# ADMIN_SECRET  — HMAC-SHA256 key for /admin/publish webhook
 
 [[env.production.d1_databases]]
 binding       = "DB"
@@ -37,18 +49,3 @@ bucket_name = "termax-plugins"
 [[env.production.vectorize]]
 binding    = "VECTORIZE"
 index_name = "termax-plugin-embeddings"
-
-# ── Local dev bindings (uses local D1/KV/R2 stubs) ───────────────────────────
-[[d1_databases]]
-binding       = "DB"
-database_name = "termax-plugins-db"
-database_id   = "local"
-migrations_dir = "../migrations"
-
-[[kv_namespaces]]
-binding    = "KV"
-id         = "local"
-
-[[r2_buckets]]
-binding     = "R2"
-bucket_name = "termax-plugins"
