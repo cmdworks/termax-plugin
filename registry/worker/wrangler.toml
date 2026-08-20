@@ -24,6 +24,7 @@ ENVIRONMENT       = "production"
 binding       = "DB"
 database_name = "termax-plugins-db"
 database_id   = "7febecb9-a899-4ef5-bd53-5385f516f223"
+migrations_dir = "../migrations"
 
 [[env.production.kv_namespaces]]
 binding = "KV"
@@ -42,6 +43,7 @@ index_name = "termax-plugin-embeddings"
 binding       = "DB"
 database_name = "termax-plugins-db"
 database_id   = "local"
+migrations_dir = "../migrations"
 
 [[kv_namespaces]]
 binding    = "KV"
